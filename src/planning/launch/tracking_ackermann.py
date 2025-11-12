@@ -15,7 +15,6 @@ def generate_launch_description():
     ld = LaunchDescription()
     # 获取URDF文件路径
     pkg_path = get_package_share_directory('planning')
-    
     urdf_path = get_package_share_directory('agents_cpp')
     urdf_file = os.path.join(urdf_path, 'urdf', 'robot.urdf.xacro')
     # urdf_file = os.path.join(urdf_path, 'urdf', 'car.urdf.xacro')

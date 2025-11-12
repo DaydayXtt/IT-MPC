@@ -55,7 +55,7 @@ namespace agents_cpp
         t_map_odom_.transform.translation.y = 0.0; //
 
         tf_broadcaster_ = std::make_shared<TransformBroadcaster>(this);
-        // tf_broadcaster_->sendTransform(t_map_odom_);
+        tf_broadcaster_->sendTransform(t_map_odom_);
     }
     BicycleNode::BicycleNode(double x, double y, double yaw, double v)
         : Node("bicycle_node"), x_(x), y_(y), yaw_(yaw), v_(v)
@@ -138,7 +138,7 @@ namespace agents_cpp
         t_map_odom_.header.stamp = now;
         tf_broadcaster_->sendTransform(t_map_odom_);
 
-        // odom->base_link
+        // // odom->base_link
         TransformStamped t_odom_base_link;
         t_odom_base_link.header.stamp = now;
         t_odom_base_link.header.frame_id = this->ns_ + "_odom";

@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!--
+    通用轮子宏
+    参数：
+      parent      轮子挂在哪个link下面
+      name        轮子link/joint的名字前缀
+      xyz / rpy   轮子相对parent的位置
+      radius      轮半径
+      width       轮宽
+      axis        转动轴，默认绕y轴滚
+  -->
+  <xacro:macro name="wheel" params="
+      parent
+      name
+      xyz:='0 0 0'
+      rpy:='0 0 0'
+      radius:='0.1'
+      width:='0.05'
+      axis:='0 1 0'
+    ">
+
+    <link name="${name}">
+      <visual>
+        <!-- 让圆柱子躺成车轮 -->
+        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+        <geometry>
+          <cylinder length="${width}" radius="${radius}"/>
+        </geometry>
+        <material name="black">
+          <color rgba="0.1 0.1 0.1 1"/>
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="1.5708 0 0"/>
+        <geometry>
+          <cylinder length="${width}" radius="${radius}"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <mass value="0.5"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+    </link>
+
+    <joint name="${name}_joint" type="continuous">
+      <parent link="${parent}"/>
+      <child  link="${name}"/>
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+      <axis xyz="${axis}"/>
+    </joint>
+
+  </xacro:macro>
+</robot>

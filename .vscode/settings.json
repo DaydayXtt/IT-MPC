@@ -94,7 +94,8 @@
         "codecvt": "cpp",
         "condition_variable": "cpp",
         "mutex": "cpp",
-        "shared_mutex": "cpp"
+        "shared_mutex": "cpp",
+        "*.tcc": "cpp"
     },
     "cmake.sourceDirectory": "/home/dayday22/GraduationDesignPrivate/src/yjnr3/src/main"
 }

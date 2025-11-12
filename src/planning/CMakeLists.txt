@@ -61,6 +61,7 @@ ament_python_install_package(${PROJECT_NAME})
 # Install Python executables
 install(PROGRAMS
   src/test_demo/mppi/main_mppi.py
+  src/odom_to_tf.py
   DESTINATION lib/${PROJECT_NAME}
 )
 ament_package()

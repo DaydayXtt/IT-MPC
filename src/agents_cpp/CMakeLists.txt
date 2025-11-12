@@ -44,7 +44,7 @@ add_subdirectory(src/bicycle)
 
 # 安装辅助目录
 install(DIRECTORY # 作用：把这里列的目录全部复制到install文件夹下
-  urdf # config launch rviz 
+  urdf launch rviz config   
   DESTINATION share/${PROJECT_NAME})
 # if(BUILD_TESTING)
 #   find_package(ament_lint_auto REQUIRED)

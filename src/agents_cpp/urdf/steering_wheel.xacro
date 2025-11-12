@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <!--
+    可转向的前轮
+    参数：
+      parent         车身的 link
+      name_prefix    名字前缀，会生成  name_prefix_steer_link / _steer_joint / _wheel ...
+      xyz            转向支架相对车身的位置（就是车轮平面中心位置）
+      steer_limit    转向角限位
+      radius / width 轮子尺寸
+  -->
+  <xacro:include filename="$(find agents_cpp)/urdf/wheel.xacro"/>
+
+  <xacro:macro name="steering_wheel" params="
+      parent
+      name_prefix
+      xyz:='0 0 0'
+      steer_limit:='0.7'
+      radius:='0.1'
+      width:='0.05'
+    ">
+
+    <!-- 转向支架 link -->
+    <link name="${name_prefix}_steer_link">
+      <visual>
+        <geometry>
+          <box size="0.05 0.05 0.05"/>
+        </geometry>
+        <material name="blue">
+          <color rgba="0.2 0.2 0.8 1"/>
+        </material>
+      </visual>
+    </link>
+
+    <!-- 车身 -> 转向支架：绕Z轴转向 -->
+    <joint name="${name_prefix}_steer_joint" type="revolute">
+      <parent link="${parent}"/>
+      <child  link="${name_prefix}_steer_link"/>
+      <origin xyz="${xyz}" rpy="0 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="-${steer_limit}" upper="${steer_limit}" effort="10" velocity="1.0"/>
+    </joint>
+
+    <!-- 在转向支架下面挂真正的轮子（向下偏一个轮半径） -->
+    <xacro:wheel
+      parent="${name_prefix}_steer_link"
+      name="${name_prefix}_wheel"
+      xyz="0 0 -${radius}"
+      rpy="0 0 0"
+      radius="${radius}"
+      width="${width}"
+      axis="0 1 0"/>
+
+  </xacro:macro>
+</robot>
