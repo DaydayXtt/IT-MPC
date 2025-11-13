@@ -4,8 +4,8 @@
 
 ### 模型
 - [x] 建立 ros2_control 的阿克曼小车模型
+- [x] 将odom的初始位置写成ros参数
 - [ ] 实现多个小车的的模型创建，通过namespace和group
-- [ ] 将odom的初始位置写成ros参数
 - [ ] 将MPPI算法应用到基于 ros2_control 的阿克曼小车模型
 
 ### 算法
