@@ -1,8 +1,8 @@
 mppicontroller:
     dim_x: 4 # 状态维度 [x,y,yaw,v]
     dim_u: 2 # 控制维度 [steer,accel]
-    T: 20 # 预测时域长度（步数）
-    number_of_samples: 800 # 采样数量K（生成K条轨迹）
+    T: 30 # 预测时域长度（步数）
+    number_of_samples: 500 # 采样数量K（生成K条轨迹）
     param_exploration: 0.0 # 探索率（0~1，比例越高探索越强）
     param_lambda: 100.0 # 温度参数（控制权重分布陡峭度）
     param_alpha: 0.98 # 衰减因子（控制历史信息保留程度）
