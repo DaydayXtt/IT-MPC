@@ -35,6 +35,12 @@ ros2 topic pub -r 20 /ackermann_steering_controller/reference geometry_msgs/msg/
 ```
 - 打印话题`/tf`发现`ackermann_steering_controller`不会发布`odom`到`base_footprint`的变换，所以需要自己写一个小节点`odom_to_tf.py`，在`bringup`的文件中一起启动。
 
+### 多机器人：
+``` shell
+ros2 launch agents_cpp bringup_ns.launch.py
+ros2 topic pub -r 20 /agent0/ackermann_steering_controller/reference geometry_msgs/msg/TwistStamped "{twist: {linear: {x: 0.9}, angular: {z: -0.1}}}"
+```
+
 ## ToFix
 1. 加入namespace的ros2_control存在读取配置文件字段读不到的问题。
 

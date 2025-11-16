@@ -9,13 +9,14 @@ import os, yaml, tempfile
 def generate_launch_description():
     pkg = get_package_share_directory('agents_cpp')
     urdf_file = os.path.join(pkg, 'urdf', 'car.urdf.xacro')
-    rviz_file = os.path.join(pkg, 'rviz', 'display_car.rviz')
+    rviz_file = os.path.join(pkg, 'rviz', 'multiple_cars.rviz')
     ctrl_yaml = os.path.join(pkg, 'config', 'controllers.yaml')
+    
     # 预设多台机器人在 map 下的初始位姿: (x0, y0, yaw0)
     # yaw 单位为弧度
     robots = {
         "agent0": (0.0, 1.0, 1.57),
-        # "agent1": (3.0, 2.0, 1.57), 
+        "agent1": (3.0, 2.0, 3.14), 
         # "agent2": (… , … , …),
     }
     
@@ -30,33 +31,15 @@ def generate_launch_description():
         def p(name: str) -> str:
             return name if name.startswith(prefix) else prefix + name
         
-        # 1. 拿出三个顶层块
+        # 修改配置文件中的相关namespace
         cm_block = cfg.pop("controller_manager")              # controller_manager:
-        # jsb_block = cfg.pop("joint_state_broadcaster")        # joint_state_broadcaster:
-        # ak_block = cfg.pop("ackermann_steering_controller")   # ackermann_steering_controller:
-
-        # 2. 取出 controller_manager 自己的 ros__parameters
-        # cm_params = cm_block.setdefault("ros__parameters", {})
-
-        # 3. 把两个控制器挂到 controller_manager.ros__parameters 下面
-        #    结构变成：
-        #    /agent0/controller_manager:
-        #      ros__parameters:
-        #        update_rate: ...
-        #        use_sim_time: ...
-        #        joint_state_broadcaster:
-        #          type: ...
-        #        ackermann_steering_controller:
-        #          type: ...
-        #          ...
-        # cm_params["joint_state_broadcaster"] = jsb_block["ros__parameters"]
-        # cm_params["ackermann_steering_controller"] = ak_block["ros__parameters"]
-
-        # 4. 把顶层 key 从 controller_manager 改名成 /agent0/controller_manager
-        new_key = f"/{ns}/controller_manager"
-        cfg[new_key] = cm_block
-        # as_ = cm_params["ackermann_steering_controller"]
-        as_ = cfg[new_key]['ros__parameters']['ackermann_steering_controller']
+        ak_block = cfg.pop("ackermann_steering_controller")   # ackermann_steering_controller:
+        new_cm_key = f"/{ns}/controller_manager"
+        new_asc_key = f"/{ns}/ackermann_steering_controller"
+        cfg[new_cm_key] = cm_block
+        cfg[new_asc_key] = ak_block
+        
+        as_ = cfg[new_asc_key]['ros__parameters']
         as_['front_wheels_names'] = [p(n) for n in as_['front_wheels_names']]
         as_['rear_wheels_names'] = [p(n) for n in as_['rear_wheels_names']]
         as_['base_frame_id'] = p(as_.get('base_frame_id', 'base_footprint'))
@@ -68,12 +51,10 @@ def generate_launch_description():
         tmp_yaml.flush()
         tmp_yaml_name = tmp_yaml.name
 
-
         static_tf = Node(
             package='tf2_ros',
             executable='static_transform_publisher',
             name=f'{ns}_map_to_odom_static_tf',
-            # 注意 arguments 必须都是字符串
             arguments=[
                 str(x0), str(y0), '0',      # translation: x y z
                 str(yaw0), '0', '0',        # rotation ZYX
@@ -102,26 +83,31 @@ def generate_launch_description():
             package='controller_manager',
             executable='ros2_control_node',
             # name='controller_manager',  # 这个节点没有name，加上就启动不了！
-            parameters=[{'robot_description': robot_description},
-                        tmp_yaml_name],
-                        # ctrl_yaml],
+            parameters=[
+                {'robot_description': robot_description},
+                tmp_yaml_name,
+                # ctrl_yaml,
+                ],
             output='screen'
         )
 
         joint_state_broadcaster_spawner_node = Node(
             package="controller_manager",
             executable="spawner",
-            # arguments=["joint_state_broadcaster"],
-            arguments=["joint_state_broadcaster", 
-                       "--controller-manager", f"/{ns}/controller_manager"],
+            arguments=[
+                "joint_state_broadcaster", 
+                "-c", f"/{ns}/controller_manager",
+                ],
             output="screen",
         )
         ackermann_steering_spawner = Node(
             package="controller_manager",
             executable="spawner", 
-            # arguments=["ackermann_steering_controller"],
-            arguments=[f"ackermann_steering_controller", 
-                       "--controller-manager", f"/{ns}/controller_manager"],
+            arguments=[
+                "ackermann_steering_controller", 
+                "-c", 
+                f"/{ns}/controller_manager",
+                ],
             output="screen",
         )
 
@@ -130,14 +116,9 @@ def generate_launch_description():
             executable='odom_to_tf.py',
             output='screen'
         )
-        # ld.add_action(static_tf)
-        # ld.add_action(robot_state_publisher_node)
-        # ld.add_action(control_node)
-        # ld.add_action(joint_state_broadcaster_spawner_node)
-        # ld.add_action(ackermann_steering_spawner)
-        # ld.add_action(odom_to_tf_node)
+        
         group = GroupAction([
-            PushRosNamespace(ns),          # 之后的节点都在 /<ns>/ 命名空间里
+            PushRosNamespace(ns),
             static_tf,
             robot_state_publisher_node,
             control_node,
