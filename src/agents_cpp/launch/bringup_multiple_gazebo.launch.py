@@ -5,14 +5,17 @@ from launch.substitutions import LaunchConfiguration, Command
 from launch_ros.actions import Node, PushRosNamespace
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from ament_index_python.packages import get_package_share_directory
+from ament_index_python.packages import get_package_share_path
 import os, yaml, tempfile
 
 def generate_launch_description():
     pkg = get_package_share_directory('agents_cpp')
-    urdf_file = os.path.join(pkg, 'urdf', 'car.urdf.xacro')
+    ros_gz_sim_pkg = get_package_share_path('ros_gz_sim')
+    
+    urdf_file = os.path.join(pkg, 'urdf', 'car.gz_ros2_control.urdf.xacro')
     rviz_file = os.path.join(pkg, 'rviz', 'multiple_cars.rviz')
     ctrl_yaml = os.path.join(pkg, 'config', 'controllers.yaml')
-    gazebo_pkg = get_package_share_directory('gazebo_ros')
+    gazebo_config_path = os.path.join(pkg, 'config', 'gazebo_bridge.yaml')
     # 预设多台机器人在 map 下的初始位姿: (x0, y0, yaw0)
     # yaw 单位为弧度
     robots = {
@@ -22,14 +25,21 @@ def generate_launch_description():
     }
     
     ld = LaunchDescription()
-    # ① 启动 Gazebo
-    gazebo = IncludeLaunchDescription(
+    # ① 启动 Gazebo 
+    gz_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(gazebo_pkg, 'launch', 'gazebo.launch.py')
+            str(ros_gz_sim_pkg / 'launch' / 'gz_sim.launch.py')
         ),
-        launch_arguments={}.items(),
+        launch_arguments={'gz_args': 'empty.sdf -r'}.items()
     )
-    ld.add_action(gazebo)
+    gz_bridge = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        parameters=[{'config_file': gazebo_config_path}],
+        output='screen'
+    )
+    ld.add_action(gz_sim)
+    ld.add_action(gz_bridge)
     
     for ns, (x0, y0, yaw0) in robots.items():
         
@@ -88,15 +98,14 @@ def generate_launch_description():
             output='screen',
         )
         # ⑥ Gazebo 中生成该机器人模型
-        # 注意：spawn_entity 不要被 PushRosNamespace 包住，否则 topic 找不到
         spawn_entity = Node(
-            package='gazebo_ros',
-            executable='spawn_entity.py',
+            package='ros_gz_sim',
+            executable='create',
             arguments=[
                 '-entity', ns,                         # Gazebo 里的 model name
                 '-topic', f'/{ns}/robot_description',  # 从这个 topic 拿 URDF
             ],
-            output='screen',
+            output='screen'
         )
         
         # 控制器管理器

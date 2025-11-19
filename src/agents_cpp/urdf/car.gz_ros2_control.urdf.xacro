@@ -1,22 +1,16 @@
 <?xml version="1.0"?>
-<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+<robot name="car" xmlns:xacro="http://www.ros.org/wiki/xacro">
     <xacro:arg name="robot_namespace" default="" />
     <xacro:property name="ns" value="$(arg robot_namespace)" />
+
+    <xacro:include filename="$(find agents_cpp)/urdf/car.urdf.xacro" />
+    
     <!-- ros2_control 硬件接口（使用 mock 组件做演示） -->
     <ros2_control name="${ns}car" type="system">
         <hardware>
             <param name="calculate_dynamics">true</param>
             <!-- <plugin>mock_components/GenericSystem</plugin> -->
-            <plugin name="gazebo_ros2_control"
-                    filename="libgazebo_ros2_control.so">
-                <ros2_control>
-                <param name="use_sim_time">true</param>
-                </ros2_control>
-            </plugin>
-            <!-- 让关节状态由控制器驱动（不需要额外“传感器命令”） -->
-            <param name="mock_sensor_commands">true</param>
-            <!-- 更新周期（秒） -->
-            <!-- <param name="example_param_read_for_demo">0.001</param> -->
+            <plugin>gz_ros2_control/GazeboSimSystem</plugin>
         </hardware>
 
         <!-- 后轮：速度控制接口（diff_drive） -->
@@ -57,5 +51,12 @@
         </joint>
 
     </ros2_control>
+
+    <gazebo>                    
+        <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+            <parameters>$(find agents_cpp)/config/controllers.yaml</parameters>
+        </plugin>
+    </gazebo>
+
 
 </robot>
