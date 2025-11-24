@@ -19,9 +19,9 @@ def generate_launch_description():
     # 预设多台机器人在 map 下的初始位姿: (x0, y0, yaw0)
     # yaw 单位为弧度
     robots = {
-        "agent0": (0.0, 1.0, 1.57),
-        "agent1": (3.0, 2.0, 3.14), 
-        # "agent2": (… , … , …),
+        "agent0": {"pose": (0.0, 1.0, 1.57), "ign_id": 2},
+        "agent1": {"pose": (3.0, 2.0, 3.14), "ign_id": 1},
+        # "agent2": {"pose": (...), "tag_id": ...},
     }
     
     ld = LaunchDescription()
@@ -41,8 +41,9 @@ def generate_launch_description():
     ld.add_action(gz_sim)
     ld.add_action(gz_bridge)
     
-    for ns, (x0, y0, yaw0) in robots.items():
-        
+    for ns, info in robots.items():
+        x0, y0, yaw0 = info["pose"]
+        ign_id = info["ign_id"]
         # Launch 参数
         prefix = ns + '_'
         # 读取原始 YAML 并注入前缀
@@ -84,7 +85,11 @@ def generate_launch_description():
             output='screen',
         )
 
-        robot_description = Command(['xacro ', urdf_file, ' robot_namespace:=', prefix])
+        robot_description = Command(['xacro ', urdf_file, 
+                                     ' robot_namespace:=', ns, 
+                                     ' joint_prefix:=', prefix, 
+                                     ' controllers_yaml:=', tmp_yaml_name,
+                                     ])
 
         # xacro -> robot_description
         robot_state_publisher_node = Node(
@@ -93,7 +98,8 @@ def generate_launch_description():
             name='robot_state_publisher',
             parameters=[{
                 "use_sim_time": True,
-                'robot_description': robot_description
+                # "use_robot_description_topic": True,
+                'robot_description': robot_description,
             }],
             output='screen',
         )
@@ -102,8 +108,11 @@ def generate_launch_description():
             package='ros_gz_sim',
             executable='create',
             arguments=[
-                '-entity', ns,                         # Gazebo 里的 model name
-                '-topic', f'/{ns}/robot_description',  # 从这个 topic 拿 URDF
+                '-name', ns,                          # Gazebo 里的 model name
+                '-topic', f'/{ns}/robot_description', # 从 topic 拿 URDF（下面会讲这个问题）
+                '-x', str(x0),
+                '-y', str(y0),
+                '-Y', str(yaw0),
             ],
             output='screen'
         )
@@ -146,9 +155,25 @@ def generate_launch_description():
         odom_to_tf_node = Node(
             package='agents_cpp',
             executable='odom_to_tf.py',
-            output='screen'
+            output='screen',
+            parameters=[
+                {'world_frame_id':  f"{ns}_odom"},
+                {'child_frame_id': f"{ns}_base_footprint"},
+                # {'pose_array_id': ign_id},
+            ]
         )
-        
+        ign_pose_tf_node = Node(
+            package='agents_cpp',
+            executable='ign_pose_to_tf.py',
+            output='screen',
+            parameters=[
+                {'world_frame_id':  f"{ns}_odom"},
+                # {'world_frame_id':  "map"},
+                {'child_frame_id': f"{ns}_base_footprint"},
+                {'pose_array_id': ign_id},
+            ]
+        )
+
         group = GroupAction([
             PushRosNamespace(ns),
             static_tf,
@@ -156,7 +181,8 @@ def generate_launch_description():
             # control_node,
             joint_state_broadcaster_spawner_node,
             ackermann_steering_spawner,
-            odom_to_tf_node,
+            # odom_to_tf_node,
+            # ign_pose_tf_node,
         ])
         ld.add_action(spawn_entity)
         ld.add_action(group)

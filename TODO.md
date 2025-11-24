@@ -7,7 +7,7 @@
 - [x] 将odom的初始位置写成ros参数
 - [x] 实现多个小车的的模型创建，通过namespace和group
 - [ ] gazebo显示，加入碰撞属性
-
+  - [ ] rviz原地打转
 ### 算法
 - [ ] 将MPPI算法应用到基于 ros2_control 的阿克曼小车模型
 - [ ] tracking有点稳态误差，再调试一下

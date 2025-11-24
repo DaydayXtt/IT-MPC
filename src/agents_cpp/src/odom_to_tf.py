@@ -10,6 +10,16 @@ class OdomToTF(Node):
     def __init__(self):
         super().__init__('odom_to_tf_bridge')
 
+        # 参数：世界坐标系、child 前缀、要映射的数量
+        self.declare_parameter('world_frame_id', 'map')
+        self.declare_parameter('child_frame_id', 'agent')
+
+        self.world_frame_id = (
+            self.get_parameter('world_frame_id').get_parameter_value().string_value
+        )
+        self.child_frame_id = (
+            self.get_parameter('child_frame_id').get_parameter_value().string_value
+        )
         # 可配置初始位姿
         # self.declare_parameter('init_x', 0.0)
         # self.declare_parameter('init_y', 0.0)
@@ -33,8 +43,10 @@ class OdomToTF(Node):
     def cb(self, odom: Odometry):
         t = TransformStamped()
         t.header.stamp = odom.header.stamp
-        t.header.frame_id = odom.header.frame_id          # 例如 agent0_odom
-        t.child_frame_id = odom.child_frame_id            # 例如 agent0_base_footprint
+        # t.header.frame_id = odom.header.frame_id          # 例如 agent0_odom
+        t.header.frame_id = self.world_frame_id          # 例如 agent0_odom
+        # t.child_frame_id = odom.child_frame_id            # 例如 agent0_base_footprint
+        t.child_frame_id = self.child_frame_id            # 例如 agent0_base_footprint
         t.transform.translation.x = odom.pose.pose.position.x
         t.transform.translation.y = odom.pose.pose.position.y
         t.transform.translation.z = odom.pose.pose.position.z

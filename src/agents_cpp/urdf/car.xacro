@@ -1,0 +1,137 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <!-- 参数 & 引入 -->
+    <xacro:arg name="robot_namespace" default="" />
+    <xacro:property name="ns" value="$(arg robot_namespace)" />
+    <xacro:arg name="joint_prefix" default=""/>
+    <xacro:property name="jp" value="$(arg joint_prefix)" />
+    <xacro:arg name="controllers_yaml" default="" />
+    <xacro:property name="cy" value="$(arg controllers_yaml)" />
+    
+    <!-- 引入子文件 -->
+    <xacro:include filename="$(find agents_cpp)/urdf/wheel.xacro" />
+    <xacro:include filename="$(find agents_cpp)/urdf/steering_wheel.xacro" />
+
+
+    <!-- 通用参数 -->
+    <xacro:property name="body_height" value="0.3" />
+    <xacro:property name="body_width" value="0.5" />
+    <xacro:property name="wheel_radius" value="0.1" />
+    <xacro:property name="wheel_width" value="0.05" />
+    <xacro:property name="wheelbase" value="0.6" />
+    <xacro:property name="track" value="0.4" />
+
+    <!-- odom -->
+    <link name="${jp}odom" />
+    <!-- 车体底座 -->
+    <link name="${jp}base_footprint">
+        <!-- base_footprint 一般是一个虚拟参考平面，不参与碰撞 -->
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <sphere radius="0.01" />
+            </geometry>
+            <material name="transparent">
+                <color rgba="0 0 0 0" />
+            </material>
+        </visual>
+        <inertial>
+            <!-- 虚拟质量极小，仅用于计算结构完整性 -->
+            <mass value="0.01" />
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <inertia ixx="1e-6" ixy="0" ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
+        </inertial>
+    </link>
+
+    <!-- base_footprint -> base_link 固定连接 -->
+    <joint name="${jp}base_footprint_joint" type="fixed">
+        <parent link="${jp}base_footprint" />
+        <child link="${jp}base_link" />
+        <origin xyz="0 0 $(eval ${body_height} - ${wheel_radius})" rpy="0 0 0" />
+    </joint>
+
+    <!-- 车体 -->
+    <link name="${jp}base_link">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <box size="${body_width} ${body_width} ${body_height}" />
+            </geometry>
+            <material name="yellow">
+                <color rgba="1.0 1.0 0.0 1" />
+            </material>
+        </visual>
+
+        <collision>
+            <geometry>
+                <box size="${body_width} ${body_width} ${body_height}" />
+            </geometry>
+        </collision>
+
+        <inertial>
+            <!-- 车体质量与惯量，可按几何估算 -->
+            <mass value="5.0" />
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <inertia
+                ixx="0.10"
+                ixy="0.0"
+                ixz="0.0"
+                iyy="0.20"
+                iyz="0.0"
+                izz="0.20" />
+        </inertial>
+    </link>
+
+    <!-- odom -> base_footprint 固定连接 -->
+    <joint name="${jp}odom_joint" type="fixed">
+        <parent link="${jp}odom" />
+        <child link="${jp}base_footprint" />
+        <origin xyz="0 0 0" rpy="0 0 0" />
+    </joint>
+
+    <!-- =================== -->
+    <!--     后轮：复用wheel  -->
+    <!-- =================== -->
+
+    <!-- 后左轮：车体后方(-wheelbase/2)，左(+track/2) -->
+    <xacro:wheel
+        parent="${jp}base_link"
+        name="${jp}rear_left_wheel"
+        xyz="$(eval -${wheelbase} / 2) $(eval ${track} / 2) $(eval -${wheel_radius})"
+        radius="${wheel_radius}"
+        width="${wheel_width}"
+        axis="0 1 0" />
+
+    <!-- 后右轮 -->
+    <xacro:wheel
+        parent="${jp}base_link"
+        name="${jp}rear_right_wheel"
+        xyz="$(eval -${wheelbase} / 2) $(eval -${track} / 2) $(eval -${wheel_radius})"
+        radius="${wheel_radius}"
+        width="${wheel_width}"
+        axis="0 1 0" />
+
+    <!-- =================== -->
+    <!--   前轮：复用steering -->
+    <!-- =================== -->
+
+    <!-- 前左转向轮 -->
+    <xacro:steering_wheel
+        parent="${jp}base_link"
+        name_prefix="${jp}front_left"
+        xyz="$(eval  ${wheelbase} / 2) $(eval ${track} / 2) 0"
+        steer_limit="0.7"
+        radius="${wheel_radius}"
+        width="${wheel_width}" />
+
+    <!-- 前右转向轮 -->
+    <xacro:steering_wheel
+        parent="${jp}base_link"
+        name_prefix="${jp}front_right"
+        xyz="$(eval  ${wheelbase} / 2) $(eval -${track} / 2) 0"
+        steer_limit="0.7"
+        radius="${wheel_radius}"
+        width="${wheel_width}" />
+
+</robot>

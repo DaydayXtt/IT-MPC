@@ -15,6 +15,7 @@ python3 src/planning/src/test_demo/mppi/main_mppi.py
 cd {workspace_folder}
 python3 src/planning/src/test_demo/avoid_collision/main.py
 ```
+
 ## C++ demo:
 ### 自定义Bicycle模型
 ``` shell
@@ -22,26 +23,46 @@ ros2 launch planning demo_mppi_tracking.launch.py
 ```
 
 
-## 阿克曼模型 `agents_cpp`
-### 启动机器人模型
+## 阿克曼模型
+### rviz2 + ros2_control
 ``` shell
-ros2 launch agents_cpp bringup.launch.py
+ros2 launch agents_cpp bringup_multiple.launch.py
 ```
-- 如果是joint名称没有匹配，则可以启动controller，会有进一步的log。不会连 activate controller 都不行
+- 如果是joint名称没有匹配，则可以启动controller，会有进一步的log提示。不会连 activate controller 都不行
 
-### ackermann
+### gazebo + ros2_control
 ``` shell
-ros2 topic pub -r 20 /ackermann_steering_controller/reference geometry_msgs/msg/TwistStamped "{twist: {linear: {x: 0.9}, angular: {z: -0.1}}}"
+ros2 launch agents_cpp bringup_multiple_gazebo.launch.py
 ```
-- 打印话题`/tf`发现`ackermann_steering_controller`不会发布`odom`到`base_footprint`的变换，所以需要自己写一个小节点`odom_to_tf.py`，在`bringup`的文件中一起启动。
 
-### 多机器人：
+### 运动话题
+- `/agentX/ackermann_steering_controller/reference`
 ``` shell
-ros2 launch agents_cpp bringup_ns.launch.py
-ros2 topic pub -r 20 /agent0/ackermann_steering_controller/reference geometry_msgs/msg/TwistStamped "{twist: {linear: {x: 0.9}, angular: {z: -0.1}}}"
+ros2 topic pub -r 20 /agentX/ackermann_steering_controller/reference geometry_msgs/msg/TwistStamped "{twist: {linear: {x: 3.0}, angular: {z: -1.0}}}"
 ```
+
+- 打印话题`/tf`发现`ackermann_steering_controller`不会发布`odom`到`base_footprint`的变换，因为ros2_control将`odom`到`base_footprint`的变换发到了话题`ackermann_steering_controller/tf_odometry`上，所以需要加上一个remapping：
+``` python
+# 控制器管理器
+control_node = Node(
+    package='controller_manager',
+    executable='ros2_control_node',
+    # name='controller_manager',  # 这个节点没有name，加上就启动不了！
+    parameters=[
+        {'robot_description': robot_description},
+        tmp_yaml_name,
+        # ctrl_yaml,
+        ],
+    output='screen',
+    remappings=[
+            ("ackermann_steering_controller/tf_odometry", "/tf"),
+        ],
+)
+```
+- 
+
 
 ## ToFix
-1. 加入namespace的ros2_control存在读取配置文件字段读不到的问题。
-
-
+1. rviz2中显示与gazebo不一致，gazebo中发生碰撞了但rviz2中没有
+    - 现象1： `odom_to_tf_node` rviz2中Model0的base_link和odom相对关系是变化的，但是`ign_pose_tf_node`是不动的。
+        - 进不去回调函数了

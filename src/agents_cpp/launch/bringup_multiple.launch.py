@@ -64,7 +64,10 @@ def generate_launch_description():
             output='screen',
         )
 
-        robot_description = Command(['xacro ', urdf_file, ' robot_namespace:=', prefix])
+        robot_description = Command(['xacro ', urdf_file, 
+                                     ' robot_namespace:=', ns,
+                                     ' joint_prefix:=', prefix,
+                                     ])
 
         # xacro -> robot_description
         robot_state_publisher_node = Node(
@@ -88,7 +91,10 @@ def generate_launch_description():
                 tmp_yaml_name,
                 # ctrl_yaml,
                 ],
-            output='screen'
+            output='screen',
+            remappings=[
+                    ("ackermann_steering_controller/tf_odometry", "/tf"),
+                ],
         )
 
         joint_state_broadcaster_spawner_node = Node(
@@ -124,7 +130,7 @@ def generate_launch_description():
             control_node,
             joint_state_broadcaster_spawner_node,
             ackermann_steering_spawner,
-            odom_to_tf_node,
+            # odom_to_tf_node,
         ])
         ld.add_action(group)
 

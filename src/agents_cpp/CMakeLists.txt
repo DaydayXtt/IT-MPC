@@ -53,6 +53,7 @@ ament_python_install_package(${PROJECT_NAME})
 # Install Python executables
 install(PROGRAMS
   src/odom_to_tf.py
+  src/ign_pose_to_tf.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

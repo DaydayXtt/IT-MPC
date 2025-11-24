@@ -30,6 +30,21 @@
           <color rgba="0.2 0.2 0.8 1"/>
         </material>
       </visual>
+      <!-- collision：与 visual 一致 -->
+      <collision>
+        <geometry>
+          <box size="0.05 0.05 0.05"/>
+        </geometry>
+      </collision>
+      <!-- inertial：质量、惯性矩，基于 0.05m 立方体 -->
+      <inertial>
+        <mass value="0.1"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <!-- 惯性矩基于实心立方体 I = (1/6) m * a^2 -->
+        <!-- a = 0.05m,  m=0.1kg → I = 0.1 * 0.05^2 / 6 = 4.1667e-05 -->
+        <inertia ixx="4.17e-05" iyy="4.17e-05" izz="4.17e-05" ixy="0.0" ixz="0.0" iyz="0.0"/>
+      </inertial>
+
     </link>
 
     <!-- 车身 -> 转向支架：绕Z轴转向 -->

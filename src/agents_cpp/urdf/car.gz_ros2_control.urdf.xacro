@@ -2,50 +2,56 @@
 <robot name="car" xmlns:xacro="http://www.ros.org/wiki/xacro">
     <xacro:arg name="robot_namespace" default="" />
     <xacro:property name="ns" value="$(arg robot_namespace)" />
+    <xacro:arg name="joint_prefix" default=""/>
+    <xacro:property name="jp" value="$(arg joint_prefix)" />
+    <!-- 新增：控制器配置文件路径作为参数 -->
+    <xacro:arg name="controllers_yaml" default="" />
+    <xacro:property name="cy" value="$(arg controllers_yaml)" />
 
-    <xacro:include filename="$(find agents_cpp)/urdf/car.urdf.xacro" />
+
+    <xacro:include filename="$(find agents_cpp)/urdf/car.xacro" />
     
     <!-- ros2_control 硬件接口（使用 mock 组件做演示） -->
-    <ros2_control name="${ns}car" type="system">
+    <ros2_control name="${jp}car" type="system">
         <hardware>
-            <param name="calculate_dynamics">true</param>
+            <!-- <param name="calculate_dynamics">true</param> -->
             <!-- <plugin>mock_components/GenericSystem</plugin> -->
             <plugin>gz_ros2_control/GazeboSimSystem</plugin>
         </hardware>
 
         <!-- 后轮：速度控制接口（diff_drive） -->
-        <joint name="${ns}rear_left_wheel_joint">
+        <joint name="${jp}rear_left_wheel_joint">
             <command_interface name="velocity" />
             <state_interface name="position" />
             <state_interface name="velocity" />
         </joint>
 
-        <joint name="${ns}rear_right_wheel_joint">
+        <joint name="${jp}rear_right_wheel_joint">
             <command_interface name="velocity" />
             <state_interface name="position" />
             <state_interface name="velocity" />
         </joint>
 
         <!-- 前轮转向：位置控制接口（给定转向角） -->
-        <joint name="${ns}front_left_steer_joint">
+        <joint name="${jp}front_left_steer_joint">
             <command_interface name="position" />
             <state_interface name="position" />
             <state_interface name="velocity" />
         </joint>
 
-        <joint name="${ns}front_right_steer_joint">
+        <joint name="${jp}front_right_steer_joint">
             <command_interface name="position" />
             <state_interface name="position" />
             <state_interface name="velocity" />
         </joint>
 
         <!-- 前轮滚动：仅状态 -->
-        <joint name="${ns}front_left_wheel_joint">
+        <joint name="${jp}front_left_wheel_joint">
             <state_interface name="position" />
             <state_interface name="velocity" />
         </joint>
 
-        <joint name="${ns}front_right_wheel_joint">
+        <joint name="${jp}front_right_wheel_joint">
             <state_interface name="position" />
             <state_interface name="velocity" />
         </joint>
@@ -53,10 +59,15 @@
     </ros2_control>
 
     <gazebo>                    
+        <!-- <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin"> -->
         <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
-            <parameters>$(find agents_cpp)/config/controllers.yaml</parameters>
+            <ros>
+                <namespace>${ns}</namespace>
+                <remapping>ackermann_steering_controller/tf_odometry:=/tf</remapping>
+            </ros>
+            <!-- <parameters>$(find agents_cpp)/config/controllers.yaml</parameters> -->
+            <!-- <parameters>$(find agents_cpp)/config/agent0_controllers.yaml</parameters> -->
+            <parameters>${cy}</parameters>
         </plugin>
     </gazebo>
-
-
 </robot>
