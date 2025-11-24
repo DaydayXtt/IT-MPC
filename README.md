@@ -38,31 +38,41 @@ ros2 launch agents_cpp bringup_multiple_gazebo.launch.py
 ### 运动话题
 - `/agentX/ackermann_steering_controller/reference`
 ``` shell
-ros2 topic pub -r 20 /agentX/ackermann_steering_controller/reference geometry_msgs/msg/TwistStamped "{twist: {linear: {x: 3.0}, angular: {z: -1.0}}}"
+ros2 topic pub -r 20 /agent0/ackermann_steering_controller/reference geometry_msgs/msg/TwistStamped "{twist: {linear: {x: 1.0}, angular: {z: 0.0}}}"
+ros2 topic pub -r 20 /agent1/ackermann_steering_controller/reference geometry_msgs/msg/TwistStamped "{twist: {linear: {x: 1.5}, angular: {z: -0.3}}}"
 ```
 
 - 打印话题`/tf`发现`ackermann_steering_controller`不会发布`odom`到`base_footprint`的变换，因为ros2_control将`odom`到`base_footprint`的变换发到了话题`ackermann_steering_controller/tf_odometry`上，所以需要加上一个remapping：
 ``` python
 # 控制器管理器
 control_node = Node(
-    package='controller_manager',
-    executable='ros2_control_node',
-    # name='controller_manager',  # 这个节点没有name，加上就启动不了！
-    parameters=[
-        {'robot_description': robot_description},
-        tmp_yaml_name,
-        # ctrl_yaml,
-        ],
-    output='screen',
-    remappings=[
-            ("ackermann_steering_controller/tf_odometry", "/tf"),
-        ],
+  package='controller_manager',
+  executable='ros2_control_node',
+  # name='controller_manager',  # 这个节点没有name，加上就启动不了！
+  parameters=[
+    {'robot_description': robot_description},
+    tmp_yaml_name,
+    # ctrl_yaml,
+    ],
+  output='screen',
+  remappings=[
+        ("ackermann_steering_controller/tf_odometry", "/tf"),
+    ],
 )
 ```
-- 
-
-
+  - `gazebo` 在 `xacro` 文件中修改
+    ``` xml
+    <gazebo>                    
+      <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+        <ros>
+          <namespace>${ns}</namespace>
+          <remapping>ackermann_steering_controller/tf_odometry:=/tf</remapping>
+        </ros>
+        <parameters>${cy}</parameters>
+      </plugin>
+    </gazebo>
+    ```
 ## ToFix
 1. rviz2中显示与gazebo不一致，gazebo中发生碰撞了但rviz2中没有
-    - 现象1： `odom_to_tf_node` rviz2中Model0的base_link和odom相对关系是变化的，但是`ign_pose_tf_node`是不动的。
-        - 进不去回调函数了
+  - 现象1： `odom_to_tf_node` rviz2中Model0的base_link和odom相对关系是变化的，但是`ign_pose_tf_node`是不动的。
+    - 进不去回调函数了

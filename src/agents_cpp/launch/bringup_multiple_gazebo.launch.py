@@ -14,7 +14,7 @@ def generate_launch_description():
     
     urdf_file = os.path.join(pkg, 'urdf', 'car.gz_ros2_control.urdf.xacro')
     rviz_file = os.path.join(pkg, 'rviz', 'multiple_cars.rviz')
-    ctrl_yaml = os.path.join(pkg, 'config', 'controllers.yaml')
+    ctrl_yaml = os.path.join(pkg, 'config', 'controllers_gz.yaml')
     gazebo_config_path = os.path.join(pkg, 'config', 'gazebo_bridge.yaml')
     # 预设多台机器人在 map 下的初始位姿: (x0, y0, yaw0)
     # yaw 单位为弧度
@@ -77,10 +77,14 @@ def generate_launch_description():
             executable='static_transform_publisher',
             name=f'{ns}_map_to_odom_static_tf',
             arguments=[
-                str(x0), str(y0), '0',      # translation: x y z
-                str(yaw0), '0', '0',        # rotation ZYX
-                'map',                      # parent frame
-                f'{ns}_odom',               # child frame，例如 agent0_odom
+                '--x', str(x0),
+                '--y', str(y0),
+                '--z', '0',
+                '--yaw', str(yaw0),
+                '--pitch', '0',
+                '--roll', '0',
+                '--frame-id', 'map',
+                '--child-frame-id', f'{ns}_odom',
             ],
             output='screen',
         )
@@ -167,8 +171,8 @@ def generate_launch_description():
             executable='ign_pose_to_tf.py',
             output='screen',
             parameters=[
-                {'world_frame_id':  f"{ns}_odom"},
-                # {'world_frame_id':  "map"},
+                # {'world_frame_id':  f"{ns}_odom"},
+                {'world_frame_id':  "/map"},
                 {'child_frame_id': f"{ns}_base_footprint"},
                 {'pose_array_id': ign_id},
             ]
@@ -181,7 +185,6 @@ def generate_launch_description():
             # control_node,
             joint_state_broadcaster_spawner_node,
             ackermann_steering_spawner,
-            # odom_to_tf_node,
             # ign_pose_tf_node,
         ])
         ld.add_action(spawn_entity)

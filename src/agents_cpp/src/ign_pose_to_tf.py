@@ -12,7 +12,8 @@
 import rclpy
 from rclpy.node import Node
 
-from geometry_msgs.msg import PoseArray
+from geometry_msgs.msg import PoseArray, Pose
+from nav_msgs.msg import Odometry
 from geometry_msgs.msg import TransformStamped
 from tf2_ros import TransformBroadcaster
 
@@ -23,7 +24,7 @@ class GazeboPoseToTF(Node):
 
         # 参数：世界坐标系、child 前缀、要映射的数量
         self.declare_parameter('world_frame_id', 'map')
-        self.declare_parameter('child_frame_prefix', 'agent')
+        self.declare_parameter('child_frame_id', 'agent')
         self.declare_parameter('pose_array_id', 0)
 
         self.world_frame_id = (
@@ -41,6 +42,7 @@ class GazeboPoseToTF(Node):
             f'pose_id={self.pose_array_id}. '
         )
 
+        self.gazebo_pose = Pose()
         # TF 广播器
         self.tf_broadcaster = TransformBroadcaster(self)
 
@@ -53,26 +55,44 @@ class GazeboPoseToTF(Node):
             self.pose_array_callback,
             10
         )
+        
+        self.ackermann_odom_sub = self.create_subscription(
+            Odometry,
+            'ackermann_steering_controller/odometry',
+            self.ackermann_pose_callback,
+            10
+        )
 
     def pose_array_callback(self, msg: PoseArray):
-        
-        self.get_logger().info('---------- Reverived PoseArray message from ign!!! ----------')
+        # self.get_logger().info('---------- Received PoseArray message from ign!!! ----------')
+        self.gazebo_pose = msg.poses[self.pose_array_id]
+        # self.get_logger().info(f'Gazebo pose {self.pose_array_id}: {self.gazebo_pose}')
 
-        now = self.get_clock().now().to_msg()
-        pose = msg.poses[self.pose_array_id]
-
+    def ackermann_pose_callback(self, odom: Odometry):
+        if self.gazebo_pose.position.x == 0 and self.gazebo_pose.position.y == 0 and self.gazebo_pose.position.z == 0:
+            return
+        # self.get_logger().info('---------- Received Ackermann Odometry message from ign!!! ----------')
         t = TransformStamped()
-        t.header.stamp = now
-        t.header.frame_id = self.world_frame_id
-        t.child_frame_id = self.child_frame_id
+        t.header.stamp = odom.header.stamp
+        # t.header.frame_id = odom.header.frame_id          # 例如 agent0_odom
+        t.header.frame_id = self.world_frame_id          # 例如 agent0_odom
+        # t.child_frame_id = odom.child_frame_id            # 例如 agent0_base_footprint
+        t.child_frame_id = self.child_frame_id            # 例如 agent0_base_footprint
+        t.transform.translation.x = self.gazebo_pose.position.x
+        t.transform.translation.y = self.gazebo_pose.position.y
+        t.transform.translation.z = self.gazebo_pose.position.z
+        t.transform.rotation = self.gazebo_pose.orientation
+        # # 叠加完整 3D 姿态：q_total = q0 * q_odom
+        # q = odom.pose.pose.orientation
+        # q_odom = [q.x, q.y, q.z, q.w]
+        # q_total = quaternion_multiply(self.q0, q_odom)
 
-        t.transform.translation.x = pose.position.x
-        t.transform.translation.y = pose.position.y
-        t.transform.translation.z = pose.position.z
-        t.transform.rotation = pose.orientation
-
+        # t.transform.rotation.x = q_total[0]
+        # t.transform.rotation.y = q_total[1]
+        # t.transform.rotation.z = q_total[2]
+        # t.transform.rotation.w = q_total[3]
+        
         self.tf_broadcaster.sendTransform(t)
-
 
 def main(args=None):
     rclpy.init(args=args)
