@@ -42,6 +42,7 @@ class GazeboPoseToTF(Node):
             f'pose_id={self.pose_array_id}. '
         )
 
+        self.gazebo_odom_ = Odometry()
         self.gazebo_pose = Pose()
         # TF 广播器
         self.tf_broadcaster = TransformBroadcaster(self)
@@ -55,6 +56,7 @@ class GazeboPoseToTF(Node):
             self.pose_array_callback,
             10
         )
+        self.ign_odom_puber_ = self.create_publisher(Odometry, 'ign_odom', 10)
         
         self.ackermann_odom_sub = self.create_subscription(
             Odometry,
@@ -93,6 +95,13 @@ class GazeboPoseToTF(Node):
         # t.transform.rotation.w = q_total[3]
         
         self.tf_broadcaster.sendTransform(t)
+        
+        # 发布odom
+        self.gazebo_odom_.header = odom.header
+        self.gazebo_odom_.child_frame_id = self.child_frame_id
+        self.gazebo_odom_.pose.pose = self.gazebo_pose
+        self.gazebo_odom_.twist.twist = odom.twist.twist
+        self.ign_odom_puber_.publish(self.gazebo_odom_)
 
 def main(args=None):
     rclpy.init(args=args)

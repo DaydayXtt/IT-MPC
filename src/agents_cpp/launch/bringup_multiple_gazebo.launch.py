@@ -77,10 +77,13 @@ def generate_launch_description():
             executable='static_transform_publisher',
             name=f'{ns}_map_to_odom_static_tf',
             arguments=[
-                '--x', str(x0),
-                '--y', str(y0),
+                # '--x', str(x0),
+                '--x', '0',
+                # '--y', str(y0),
+                '--y', '0',
                 '--z', '0',
-                '--yaw', str(yaw0),
+                # '--yaw', str(yaw0),
+                '--yaw', '0',
                 '--pitch', '0',
                 '--roll', '0',
                 '--frame-id', 'map',
@@ -171,8 +174,8 @@ def generate_launch_description():
             executable='ign_pose_to_tf.py',
             output='screen',
             parameters=[
-                # {'world_frame_id':  f"{ns}_odom"},
-                {'world_frame_id':  "/map"},
+                {'world_frame_id':  f"{ns}_odom"},
+                # {'world_frame_id':  "map"},
                 {'child_frame_id': f"{ns}_base_footprint"},
                 {'pose_array_id': ign_id},
             ]
@@ -185,7 +188,7 @@ def generate_launch_description():
             # control_node,
             joint_state_broadcaster_spawner_node,
             ackermann_steering_spawner,
-            # ign_pose_tf_node,
+            ign_pose_tf_node,
         ])
         ld.add_action(spawn_entity)
         ld.add_action(group)
