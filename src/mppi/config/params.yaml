@@ -1,0 +1,32 @@
+mppicontroller:
+    dim_x: 4 # 状态维度 [x,y,yaw,v]
+    dim_u: 2 # 控制维度 [steer,accel]
+    T: 30 # 预测时域长度（步数）
+    number_of_samples: 500 # 采样数量K（生成K条轨迹）
+    param_exploration: 0.0 # 探索率（0~1，比例越高探索越强）
+    param_lambda: 100.0 # 温度参数（控制权重分布陡峭度）
+    param_alpha: 0.98 # 衰减因子（控制历史信息保留程度）
+    sigma1: 0.075 # 控制噪声协方差1
+    sigma2: 2.0 # 控制噪声协方差2
+    # sigma: np.array([ [ 0.075, 0.0 ], [ 0.0, 2.0 ] ])         # 控制噪声协方差矩阵Σ: BB^T（控制探索强度）
+    state_cost_xy: 50.0
+    state_cost_yaw: 1.0
+    state_cost_v: 20.0
+    # stage_cost_weight: np.array([ 50.0, 50.0, 1.0, 20.0 ])    # 阶段成本权重矩阵
+    input_cost: 1.0 # 输入成本权重矩阵
+    terminal_cost_xy: 50.0
+    terminal_cost_yaw: 1.0
+    terminal_cost_v: 20.0
+    # terminal_cost_weight: np.array([ 50.0, 50.0, 1.0, 20.0 ]) # 终端成本权重矩阵
+    max_search_idx_len: 50 # 搜索最近参考点索引长度
+    visualize_sampled_trajs: true # 是否可视化采样轨迹
+    visualize_optimal_traj: true # 是否可视化最优轨迹
+
+vehicleparams:
+    delta_t: 0.1 # 时间步长
+    wheel_base: 2.5 # 轴距
+    0.4
+    max_steer_angle: 30 # z轴转向最大角度(角度)
+    max_accel_rate: 2.0 # 最大加速度
+    max_speed: 8.0 # 最大速度
+

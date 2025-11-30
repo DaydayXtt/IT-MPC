@@ -1,0 +1,6 @@
+/agent0/odom_bicycle:
+  ros__parameters:
+    init_x: -16.0
+    init_y: 0.0
+    init_yaw: 0.3
+    init_v: 0.0
